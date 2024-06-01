@@ -2,12 +2,15 @@ package ghxtest
 
 import (
 	"context"
+	"testing"
 
 	"github.com/google/go-github/v62/github"
 )
 
 type MockRepoIssueLister struct {
 	cursor       int
+	T            *testing.T
+	TestFunc     func(t *testing.T, ctx context.Context, owner string, repo string, opts *github.IssueListByRepoOptions)
 	ReturnValues []*MockRepoIssueListerReturnValues
 }
 
@@ -46,9 +49,12 @@ func NewMockRepoIssueListerReturnValues(lastPageErr error, issuesOnPages ...int)
 	return rv
 }
 
-func (m *MockRepoIssueLister) ListByRepo(_ context.Context, _ string, _ string, _ *github.IssueListByRepoOptions) ([]*github.Issue, *github.Response, error) {
+func (m *MockRepoIssueLister) ListByRepo(ctx context.Context, owner string, repo string, opts *github.IssueListByRepoOptions) ([]*github.Issue, *github.Response, error) {
 	if len(m.ReturnValues) <= m.cursor {
 		panic("MockRepoIssueLister.ListByRepo called more times than it has ReturnValues mocked")
+	}
+	if m.TestFunc != nil {
+		m.TestFunc(m.T, ctx, owner, repo, opts)
 	}
 	rv := m.ReturnValues[m.cursor]
 	m.cursor++
