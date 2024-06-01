@@ -6,6 +6,16 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
+type IssueHandler func(*github.Issue) error
+
+type repoIssueLister interface {
+	ListByRepo(ctx context.Context, owner string, repo string, opts *github.IssueListByRepoOptions) ([]*github.Issue, *github.Response, error)
+}
+
+type issueSearcher interface {
+	Issues(ctx context.Context, query string, opts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error)
+}
+
 type MapIssuesOfRepoOptions struct {
 	// The account owner of the repository. The name is not case sensitive.
 	Owner string
@@ -13,14 +23,12 @@ type MapIssuesOfRepoOptions struct {
 	// The name of the repository without the .git extension. The name is not case sensitive.
 	Repo string
 
-	*github.IssueListByRepoOptions
+	github.IssueListByRepoOptions
 }
 
-type IssueHandler func(*github.Issue) error
-
-func MapIssuesOfRepo(ctx context.Context, client *github.Client, opts *MapIssuesOfRepoOptions, handle IssueHandler) error {
+func MapIssuesOfRepo(ctx context.Context, issues repoIssueLister, opts *MapIssuesOfRepoOptions, handle IssueHandler) error {
 	for {
-		issues, resp, err := client.Issues.ListByRepo(ctx, opts.Owner, opts.Repo, opts.IssueListByRepoOptions)
+		issues, resp, err := issues.ListByRepo(ctx, opts.Owner, opts.Repo, &opts.IssueListByRepoOptions)
 		if err != nil {
 			return err
 		}
@@ -41,12 +49,12 @@ func MapIssuesOfRepo(ctx context.Context, client *github.Client, opts *MapIssues
 type MapSearchIssuesOptions struct {
 	SearchQualifiers SearchQualifiers
 
-	*github.SearchOptions
+	github.SearchOptions
 }
 
-func MapSearchIssues(ctx context.Context, client *github.Client, opts *MapSearchIssuesOptions, handle IssueHandler) error {
+func MapSearchIssues(ctx context.Context, search issueSearcher, opts *MapSearchIssuesOptions, handle IssueHandler) error {
 	for {
-		issuesSearchResult, resp, err := client.Search.Issues(ctx, opts.SearchQualifiers.Join(), opts.SearchOptions)
+		issuesSearchResult, resp, err := search.Issues(ctx, opts.SearchQualifiers.Join(), &opts.SearchOptions)
 		if err != nil {
 			return err
 		}
@@ -64,8 +72,8 @@ func MapSearchIssues(ctx context.Context, client *github.Client, opts *MapSearch
 	return nil
 }
 
-func SearchOneIssue(ctx context.Context, client *github.Client, searchQualifiers SearchQualifiers) (*github.Issue, error) {
-	issuesSearchResult, _, err := client.Search.Issues(ctx, searchQualifiers.Join(), &github.SearchOptions{ListOptions: github.ListOptions{PerPage: 1}})
+func SearchOneIssue(ctx context.Context, search issueSearcher, searchQualifiers SearchQualifiers) (*github.Issue, error) {
+	issuesSearchResult, _, err := search.Issues(ctx, searchQualifiers.Join(), &github.SearchOptions{ListOptions: github.ListOptions{PerPage: 1}})
 	if err != nil || len(issuesSearchResult.Issues) < 1 {
 		return nil, err
 	}
