@@ -84,3 +84,43 @@ func TestNewMockRepoIssueListerReturnValues(t *testing.T) {
 	}
 
 }
+
+func TestNewEmptyIssues(t *testing.T) {
+	t.Parallel()
+
+	numP := func(n int) *int {
+		return &n
+	}
+
+	for _, tc := range []struct {
+		name         string
+		num          int
+		expectIssues []*github.Issue
+	}{
+		{
+			name: "single issue",
+			num:  1,
+			expectIssues: []*github.Issue{
+				{Number: numP(1)},
+			},
+		},
+		{
+			name: "multiple issues",
+			num:  3,
+			expectIssues: []*github.Issue{
+				{Number: numP(1)},
+				{Number: numP(2)},
+				{Number: numP(3)},
+			},
+		},
+		{
+			name: "oops, all zeroes",
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.expectIssues, NewEmptyIssues(tc.num))
+		})
+	}
+}
