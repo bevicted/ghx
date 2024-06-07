@@ -54,7 +54,7 @@ type MapSearchIssuesOptions struct {
 
 func MapSearchIssues(ctx context.Context, search issueSearcher, opts *MapSearchIssuesOptions, handle IssueHandler) error {
 	for {
-		issuesSearchResult, resp, err := search.Issues(ctx, opts.SearchQualifiers.Join(), &opts.SearchOptions)
+		issuesSearchResult, resp, err := search.Issues(ctx, opts.SearchQualifiers.String(), &opts.SearchOptions)
 		if err != nil {
 			return err
 		}
@@ -73,7 +73,7 @@ func MapSearchIssues(ctx context.Context, search issueSearcher, opts *MapSearchI
 }
 
 func SearchOneIssue(ctx context.Context, search issueSearcher, searchQualifiers SearchQualifiers) (*github.Issue, error) {
-	issuesSearchResult, _, err := search.Issues(ctx, searchQualifiers.Join(), &github.SearchOptions{ListOptions: github.ListOptions{PerPage: 1}})
+	issuesSearchResult, _, err := search.Issues(ctx, searchQualifiers.String(), &github.SearchOptions{ListOptions: github.ListOptions{PerPage: 1}})
 	if err != nil || len(issuesSearchResult.Issues) < 1 {
 		return nil, err
 	}

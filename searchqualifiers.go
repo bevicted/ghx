@@ -8,7 +8,7 @@ import (
 type SearchQualifier string
 type SearchQualifiers []SearchQualifier
 
-func (s SearchQualifiers) Join() string {
+func (s SearchQualifiers) String() string {
 	var jointQualifiers strings.Builder
 	for idx, qualifier := range s {
 		if idx != 0 {
