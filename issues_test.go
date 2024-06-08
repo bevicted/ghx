@@ -137,35 +137,35 @@ func TestMapSearchIssues(t *testing.T) {
 			expectIssues:  15,
 		},
 		{
-			name: "err - 1 page, repoIssueListerErr on page 1",
+			name: "err - 1 page, issueSearcherErr on page 1",
 			searchQualifiers: SearchQualifiers{
 				IsIssue,
 				IsOpen,
 				RestrictTextSearchToBody,
 			},
-			lastPageErr: errors.New("repoIssueListerErr"),
-			expectErr:   errors.New("repoIssueListerErr"),
+			lastPageErr: errors.New("issueSearcherErr"),
+			expectErr:   errors.New("issueSearcherErr"),
 		},
 		{
-			name: "err - 3 pages, 10 issues, repoIssueListerErr on page 3",
+			name: "err - 3 pages, 10 issues, issueSearcherErr on page 3",
 			searchQualifiers: SearchQualifiers{
 				IsIssue,
 				IsOpen,
 				RestrictTextSearchToBody,
 			},
-			lastPageErr:   errors.New("repoIssueListerErr"),
+			lastPageErr:   errors.New("issueSearcherErr"),
 			issuesOnPages: []int{5, 5, 0},
 			expectIssues:  10,
-			expectErr:     errors.New("repoIssueListerErr"),
+			expectErr:     errors.New("issueSearcherErr"),
 		},
 		{
-			name: "err - 2 pages, handlerErr fails before repoIssueListerErr",
+			name: "err - 2 pages, handlerErr fails before issueSearcherErr",
 			searchQualifiers: SearchQualifiers{
 				IsIssue,
 				IsOpen,
 				RestrictTextSearchToBody,
 			},
-			lastPageErr:   errors.New("repoIssueListerErr"),
+			lastPageErr:   errors.New("issueSearcherErr"),
 			issuesOnPages: []int{5, 0},
 			handlerErr:    errors.New("handlerErr"),
 			expectErr:     errors.New("handlerErr"),
@@ -213,70 +213,29 @@ func TestSearchOneIssue(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
 		searchQualifiers SearchQualifiers
-		issuesOnPages    []int
-		lastPageErr      error
-		handlerErr       error
-		expectIssues     int
+		issueSearcherErr error
 		expectErr        error
-		mockIssue        *github.Issue
 	}{
 		{
-			name: "ok - 0 issues",
+			name: "ok - no query",
 		},
 		{
-			name: "ok - 1 page, 1 issue",
+			name: "ok - got issue",
 			searchQualifiers: SearchQualifiers{
 				IsIssue,
 				IsOpen,
 				RestrictTextSearchToBody,
 				HasText("some very specific text"),
 			},
-			issuesOnPages: []int{1},
-			expectIssues:  1,
 		},
 		{
-			name: "ok - 3 pages, 15 issues",
+			name: "err - issueSearcherErr",
 			searchQualifiers: SearchQualifiers{
 				IsIssue,
 				IsOpen,
-				RestrictTextSearchToBody,
 			},
-			issuesOnPages: []int{5, 5, 5},
-			expectIssues:  15,
-		},
-		{
-			name: "err - 1 page, repoIssueListerErr on page 1",
-			searchQualifiers: SearchQualifiers{
-				IsIssue,
-				IsOpen,
-				RestrictTextSearchToBody,
-			},
-			lastPageErr: errors.New("repoIssueListerErr"),
-			expectErr:   errors.New("repoIssueListerErr"),
-		},
-		{
-			name: "err - 3 pages, 10 issues, repoIssueListerErr on page 3",
-			searchQualifiers: SearchQualifiers{
-				IsIssue,
-				IsOpen,
-				RestrictTextSearchToBody,
-			},
-			lastPageErr:   errors.New("repoIssueListerErr"),
-			issuesOnPages: []int{5, 5, 0},
-			expectIssues:  10,
-			expectErr:     errors.New("repoIssueListerErr"),
-		},
-		{
-			name: "err - 2 pages, handlerErr fails before repoIssueListerErr",
-			searchQualifiers: SearchQualifiers{
-				IsIssue,
-				IsOpen,
-				RestrictTextSearchToBody,
-			},
-			lastPageErr:   errors.New("repoIssueListerErr"),
-			issuesOnPages: []int{5, 0},
-			handlerErr:    errors.New("handlerErr"),
-			expectErr:     errors.New("handlerErr"),
+			issueSearcherErr: errors.New("issueSearcherErr"),
+			expectErr:        errors.New("issueSearcherErr"),
 		},
 	} {
 		tc := tc
@@ -287,22 +246,27 @@ func TestSearchOneIssue(t *testing.T) {
 				t.Helper()
 				assert.Equal(t, testCtx, ctx)
 				assert.Equal(t, tc.searchQualifiers.String(), query)
-				assert.Equal(t, github.SearchOptions{ListOptions: github.ListOptions{}}, *searchOptions)
+				assert.Equal(t, github.SearchOptions{ListOptions: github.ListOptions{PerPage: 1}}, *searchOptions)
 			}
 			issueSearcher := &ghxtest.MockIssueSearcher{
 				T:        t,
 				TestFunc: mockIssueSearcherTestFunc,
 				ReturnValues: []*ghxtest.MockIssueSearcherReturnValues{
 					{
-						IssueSearchResult: &github.IssuesSearchResult{
-							Issues: []*github.Issue{tc.mockIssue},
-						},
+						Err: tc.issueSearcherErr,
 					},
 				},
 			}
+			var mockIssue *github.Issue
+			if tc.issueSearcherErr == nil {
+				mockIssue = &github.Issue{}
+				issueSearcher.ReturnValues[0].IssueSearchResult = &github.IssuesSearchResult{
+					Issues: []*github.Issue{mockIssue},
+				}
+			}
 
 			issue, err := SearchOneIssue(testCtx, issueSearcher, tc.searchQualifiers)
-			assert.Equal(t, tc.mockIssue, issue)
+			assert.Equal(t, mockIssue, issue)
 			assert.Equal(t, tc.expectErr, err)
 		})
 	}
