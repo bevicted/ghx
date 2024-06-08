@@ -1,26 +1,25 @@
 linters:
   enable:
     # Default linters plus these:
-    - bodyclose      # [-] Checks whether HTTP response body is closed successfully
-    - contextcheck   # [-] Checks whether the function uses a non-inherited context
-    - exhaustive     # [+] Checks exhaustiveness of enum switch statements
-    - exportloopref  # [-] Checks for pointers to enclosing loop variables
-    - gci            # [+] Checks package import order and makes it always deterministic
-    - goconst        # [+] Checks for repeated strings that could be replaced by a constant
-    - gofmt          # [+] Checks whether code was gofmt-ed
-    - gomnd          # [+] Checks for magic numbers
-    - misspell       # [+] Checks for commonly misspelled English words
-    - nilerr         # [+] Finds the code that returns nil even if it checks that the error is not nil
-    - nolintlint     # [+] Checks for ill-formed or insufficient nolint directives
+    - bodyclose # [-] Checks whether HTTP response body is closed successfully
+    - contextcheck # [-] Checks whether the function uses a non-inherited context
+    - exhaustive # [+] Checks exhaustiveness of enum switch statements
+    - exportloopref # [-] Checks for pointers to enclosing loop variables
+    - gci # [+] Checks package import order and makes it always deterministic
+    - goconst # [+] Checks for repeated strings that could be replaced by a constant
+    - gofmt # [+] Checks whether code was gofmt-ed
+    - gomnd # [+] Checks for magic numbers
+    - misspell # [+] Checks for commonly misspelled English words
+    - nilerr # [+] Finds the code that returns nil even if it checks that the error is not nil
+    - nolintlint # [+] Checks for ill-formed or insufficient nolint directives
     - nonamedreturns # [+] Checks for named returns
-    - perfsprint     # [+] Checks for fmt.Sprintf calls, that can be replaced with a faster alternative
-    - prealloc       # [+] Checks for slice declarations that could potentially be pre-allocated
-    - testifylint    # [+] Checks usage of github.com/stretchr/testify
-    - thelper        # [+] Checks for test helpers which do not start with t.Helper()
-    - unconvert      # [+] Checks for unnecessary type conversions 
-    - paralleltest   # [+] Checks for test t.Parallel() calls
-    - revive         # [+] Metalinter
-
+    - perfsprint # [+] Checks for fmt.Sprintf calls, that can be replaced with a faster alternative
+    - prealloc # [+] Checks for slice declarations that could potentially be pre-allocated
+    - testifylint # [+] Checks usage of github.com/stretchr/testify
+    - thelper # [+] Checks for test helpers which do not start with t.Helper()
+    - unconvert # [+] Checks for unnecessary type conversions 
+    - paralleltest # [+] Check for t.Parallel() calls
+    - revive # [+] Metalinter
 linters-settings:
   exhaustive:
     # Program elements to check for exhaustiveness.
@@ -578,7 +577,6 @@ linters-settings:
       - name: waitgroup-by-value
         severity: warning
         disabled: false
-
 run:
   # Timeout for analysis, e.g. 30s, 5m.
   timeout: 5m
@@ -587,7 +585,6 @@ run:
   # Enables skipping of directories:
   # - vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
   skip-dirs-use-default: true
-
 output:
   # Format: colored-line-number|line-number|json|colored-tab|tab|checkstyle|code-climate|junit-xml|github-actions|teamcity
   #
