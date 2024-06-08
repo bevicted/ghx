@@ -1,6 +1,6 @@
 module github.com/bevicted/ghx
 
-go 1.22.3
+go 1.22.4
 
 require (
 	github.com/google/go-github/v62 v62.0.0

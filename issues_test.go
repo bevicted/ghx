@@ -75,6 +75,7 @@ func TestMapIssuesOfRepo(t *testing.T) {
 				},
 			}
 			mockRepoIssueListerTestFunc := func(t *testing.T, ctx context.Context, owner, repo string, issueListByRepoOptions *github.IssueListByRepoOptions) {
+				t.Helper()
 				assert.Equal(t, testCtx, ctx)
 				assert.Equal(t, testOwner, owner)
 				assert.Equal(t, testRepo, repo)
@@ -86,7 +87,7 @@ func TestMapIssuesOfRepo(t *testing.T) {
 				ReturnValues: ghxtest.NewMockRepoIssueListerReturnValues(tc.lastPageErr, tc.issuesOnPages...),
 			}
 
-			assert.Equal(t, tc.expectErr, MapIssuesOfRepo(testCtx, mockRepoIssueLister, opts, func(i *github.Issue) error {
+			assert.Equal(t, tc.expectErr, MapIssuesOfRepo(testCtx, mockRepoIssueLister, opts, func(_ *github.Issue) error {
 				if tc.handlerErr == nil {
 					issueCount++
 				}
@@ -183,6 +184,7 @@ func TestMapSearchIssues(t *testing.T) {
 				},
 			}
 			mockIssueSearcherTestFunc := func(t *testing.T, ctx context.Context, query string, searchOptions *github.SearchOptions) {
+				t.Helper()
 				assert.Equal(t, testCtx, ctx)
 				assert.Equal(t, tc.searchQualifiers.String(), query)
 				assert.Equal(t, opts.SearchOptions, *searchOptions)
@@ -192,7 +194,7 @@ func TestMapSearchIssues(t *testing.T) {
 				TestFunc:     mockIssueSearcherTestFunc,
 				ReturnValues: ghxtest.NewMockIssueSearcherReturnValues(tc.lastPageErr, tc.issuesOnPages...),
 			}
-			assert.Equal(t, tc.expectErr, MapSearchIssues(testCtx, issueSearcher, opts, func(i *github.Issue) error {
+			assert.Equal(t, tc.expectErr, MapSearchIssues(testCtx, issueSearcher, opts, func(_ *github.Issue) error {
 				if tc.handlerErr == nil {
 					issueCount++
 				}
@@ -282,6 +284,7 @@ func TestSearchOneIssue(t *testing.T) {
 			t.Parallel()
 
 			mockIssueSearcherTestFunc := func(t *testing.T, ctx context.Context, query string, searchOptions *github.SearchOptions) {
+				t.Helper()
 				assert.Equal(t, testCtx, ctx)
 				assert.Equal(t, tc.searchQualifiers.String(), query)
 				assert.Equal(t, github.SearchOptions{ListOptions: github.ListOptions{}}, *searchOptions)

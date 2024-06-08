@@ -9,14 +9,18 @@ type SearchQualifier string
 type SearchQualifiers []SearchQualifier
 
 func (s SearchQualifiers) String() string {
-	var jointQualifiers strings.Builder
+	var query strings.Builder
 	for idx, qualifier := range s {
 		if idx != 0 {
-			jointQualifiers.WriteString(" ")
+			if _, err := query.WriteString(" "); err != nil {
+				panic(err)
+			}
 		}
-		jointQualifiers.WriteString(string(qualifier))
+		if _, err := query.WriteString(string(qualifier)); err != nil {
+			panic(err)
+		}
 	}
-	return jointQualifiers.String()
+	return query.String()
 }
 
 const (
