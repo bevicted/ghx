@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v62/github"
+	"github.com/stretchr/testify/require"
 )
 
 type MockRepoIssueLister struct {
@@ -21,10 +22,10 @@ type MockRepoIssueListerReturnValues struct {
 }
 
 func NewMockRepoIssueListerReturnValues(lastPageErr error, issuesOnPages ...int) []*MockRepoIssueListerReturnValues {
-	var rv []*MockRepoIssueListerReturnValues
 	if len(issuesOnPages) == 0 && lastPageErr != nil {
 		issuesOnPages = append(issuesOnPages, 0)
 	}
+	rv := make([]*MockRepoIssueListerReturnValues, len(issuesOnPages))
 	for idx, issueOnPage := range issuesOnPages {
 		var (
 			issues   []*github.Issue
@@ -40,22 +41,18 @@ func NewMockRepoIssueListerReturnValues(lastPageErr error, issuesOnPages ...int)
 			issues = NewEmptyIssues(issueOnPage)
 			res = &github.Response{NextPage: nextPage}
 		}
-		rv = append(rv, &MockRepoIssueListerReturnValues{
+		rv[idx] = &MockRepoIssueListerReturnValues{
 			Issues:   issues,
 			Response: res,
 			Err:      err,
-		})
+		}
 	}
 	return rv
 }
 
 func (m *MockRepoIssueLister) ListByRepo(ctx context.Context, owner string, repo string, opts *github.IssueListByRepoOptions) ([]*github.Issue, *github.Response, error) {
-	if len(m.ReturnValues) == 0 {
-		return []*github.Issue{}, &github.Response{}, nil
-	}
-	if len(m.ReturnValues) <= m.cursor {
-		panic("MockRepoIssueLister.ListByRepo called more times than it has ReturnValues mocked")
-	}
+	m.T.Helper()
+	require.Less(m.T, m.cursor, len(m.ReturnValues), "MockRepoIssueLister.ListByRepo called more times than it has ReturnValues mocked")
 	if m.TestFunc != nil {
 		m.TestFunc(m.T, ctx, owner, repo, opts)
 	}
@@ -78,24 +75,25 @@ type MockIssueSearcherReturnValues struct {
 }
 
 func NewMockIssueSearcherReturnValues(lastPageErr error, issuesOnPages ...int) []*MockIssueSearcherReturnValues {
-	var rv []*MockIssueSearcherReturnValues
-	for _, baseRV := range NewMockRepoIssueListerReturnValues(lastPageErr, issuesOnPages...) {
-		rv = append(rv, &MockIssueSearcherReturnValues{
-			IssueSearchResult: &github.IssuesSearchResult{Issues: baseRV.Issues},
+	issueListerRV := NewMockRepoIssueListerReturnValues(lastPageErr, issuesOnPages...)
+	rv := make([]*MockIssueSearcherReturnValues, len(issueListerRV))
+	for idx, baseRV := range issueListerRV {
+		var issuesSearchResult *github.IssuesSearchResult
+		if baseRV.Issues != nil {
+			issuesSearchResult = &github.IssuesSearchResult{Issues: baseRV.Issues}
+		}
+		rv[idx] = &MockIssueSearcherReturnValues{
+			IssueSearchResult: issuesSearchResult,
 			Response:          baseRV.Response,
 			Err:               baseRV.Err,
-		})
+		}
 	}
 	return rv
 }
 
 func (m *MockIssueSearcher) Issues(ctx context.Context, query string, opts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
-	if len(m.ReturnValues) == 0 {
-		return &github.IssuesSearchResult{}, &github.Response{}, nil
-	}
-	if len(m.ReturnValues) <= m.cursor {
-		panic("MockIssueSearcher.Issues called more times than it has ReturnValues mocked")
-	}
+	m.T.Helper()
+	require.Less(m.T, m.cursor, len(m.ReturnValues), "MockIssueSearcher.Issues called more times than it has ReturnValues mocked")
 	if m.TestFunc != nil {
 		m.TestFunc(m.T, ctx, query, opts)
 	}
@@ -105,9 +103,9 @@ func (m *MockIssueSearcher) Issues(ctx context.Context, query string, opts *gith
 }
 
 func NewEmptyIssues(num int) []*github.Issue {
-	var issues []*github.Issue
+	issues := make([]*github.Issue, num)
 	for i := 1; i <= num; i++ {
-		issues = append(issues, &github.Issue{Number: &i})
+		issues[i-1] = &github.Issue{Number: &i}
 	}
 	return issues
 }

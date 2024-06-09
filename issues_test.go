@@ -28,7 +28,8 @@ func TestMapIssuesOfRepo(t *testing.T) {
 		expectErr     error
 	}{
 		{
-			name: "ok - 0 issues",
+			name:          "ok - 0 issues",
+			issuesOnPages: []int{0},
 		},
 		{
 			name:          "ok - 1 page, 1 issue",
@@ -113,7 +114,8 @@ func TestMapSearchIssues(t *testing.T) {
 		expectErr        error
 	}{
 		{
-			name: "ok - 0 issues",
+			name:          "ok - 0 issues",
+			issuesOnPages: []int{0},
 		},
 		{
 			name: "ok - 1 page, 1 issue",
