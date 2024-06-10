@@ -131,10 +131,9 @@ func TestMockRepoIssueListerListByRepo(t *testing.T) {
 			require.Len(t, tc.expectIssues, tc.callCount)
 
 			opts := &github.IssueListByRepoOptions{
-				Milestone:   "testMilestone",
-				State:       "testState",
-				Assignee:    "testAssignee",
-				ListOptions: github.ListOptions{},
+				Milestone: "testMilestone",
+				State:     "testState",
+				Assignee:  "testAssignee",
 			}
 			mril := &MockRepoIssueLister{
 				T: t,
@@ -250,6 +249,92 @@ func TestNewMockIssueSearcherReturnValues(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			assert.EqualValues(t, tc.expectValues, NewMockIssueSearcherReturnValues(tc.lastPageErr, tc.issuesOnPages...))
+		})
+	}
+}
+
+func TestMockIssueSearcherIssues(t *testing.T) {
+	t.Parallel()
+
+	var (
+		testCtx   = context.Background()
+		testQuery = "testQuery"
+	)
+	for _, tc := range []struct {
+		name                string
+		callCount           int
+		expectIssues        []int
+		expectErrOnLastCall error
+	}{
+		{
+			name:         "single call, 5 issues, no err",
+			callCount:    1,
+			expectIssues: []int{5},
+		},
+		{
+			name:         "multiple calls, 5-3-2 issues, no err",
+			callCount:    3,
+			expectIssues: []int{5, 3, 2},
+		},
+		{
+			name:                "single call, err",
+			callCount:           1,
+			expectIssues:        []int{0},
+			expectErrOnLastCall: errors.New("lastPageErr"),
+		},
+		{
+			name:                "multiple calls, 5-3-err",
+			callCount:           3,
+			expectIssues:        []int{5, 3, 0},
+			expectErrOnLastCall: errors.New("lastPageErr"),
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			require.Len(t, tc.expectIssues, tc.callCount)
+
+			opts := &github.SearchOptions{
+				Sort:  "testMilestone",
+				Order: "testState",
+			}
+			mis := &MockIssueSearcher{
+				T: t,
+				TestFunc: func(testFuncT *testing.T, ctx context.Context, query string, testFuncOpts *github.SearchOptions) { //nolint:thelper // have to differentiate T
+					t.Helper()
+					assert.Same(t, t, testFuncT)
+					assert.Equal(t, testCtx, ctx)
+					assert.Equal(t, testQuery, query)
+					assert.Same(t, opts, testFuncOpts)
+				},
+				ReturnValues: NewMockIssueSearcherReturnValues(tc.expectErrOnLastCall, tc.expectIssues...),
+			}
+			for i := 1; i <= tc.callCount; i++ {
+				issuesSearchResult, res, err := mis.Issues(testCtx, testQuery, opts)
+
+				isLastCall := i == tc.callCount
+
+				var expectNextPage int
+				if !isLastCall {
+					expectNextPage = i + 1
+				}
+
+				if tc.expectErrOnLastCall != nil && isLastCall {
+					assert.Nil(t, issuesSearchResult)
+					assert.Nil(t, res)
+				} else {
+					assert.Len(t, issuesSearchResult.Issues, tc.expectIssues[i-1])
+					assert.Equal(t, expectNextPage, res.NextPage)
+					opts.Page = res.NextPage
+				}
+
+				var expectErr error
+				if isLastCall {
+					expectErr = tc.expectErrOnLastCall
+				}
+				assert.Equal(t, expectErr, err)
+			}
 		})
 	}
 }
