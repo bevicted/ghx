@@ -1,4 +1,4 @@
-package ghx
+package sq
 
 import (
 	"testing"
