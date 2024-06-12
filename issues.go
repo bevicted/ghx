@@ -8,14 +8,6 @@ import (
 
 type IssueHandler func(*github.Issue) error
 
-type repoIssueLister interface {
-	ListByRepo(ctx context.Context, owner string, repo string, opts *github.IssueListByRepoOptions) ([]*github.Issue, *github.Response, error)
-}
-
-type issueSearcher interface {
-	Issues(ctx context.Context, query string, opts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error)
-}
-
 type MapIssuesOfRepoOptions struct {
 	// The account owner of the repository. The name is not case sensitive.
 	Owner string
@@ -26,9 +18,9 @@ type MapIssuesOfRepoOptions struct {
 	github.IssueListByRepoOptions
 }
 
-func MapIssuesOfRepo(ctx context.Context, issues repoIssueLister, opts *MapIssuesOfRepoOptions, handle IssueHandler) error {
+func (is *IssuesService) MapIssuesOfRepo(ctx context.Context, opts *MapIssuesOfRepoOptions, handle IssueHandler) error {
 	for {
-		issues, resp, err := issues.ListByRepo(ctx, opts.Owner, opts.Repo, &opts.IssueListByRepoOptions)
+		issues, resp, err := is.ListByRepo(ctx, opts.Owner, opts.Repo, &opts.IssueListByRepoOptions)
 		if err != nil {
 			return err
 		}
@@ -52,7 +44,7 @@ type MapSearchIssuesOptions struct {
 	github.SearchOptions
 }
 
-func MapSearchIssues(ctx context.Context, search issueSearcher, opts *MapSearchIssuesOptions, handle IssueHandler) error {
+func MapSearchIssues(ctx context.Context, search IssueSearcher, opts *MapSearchIssuesOptions, handle IssueHandler) error {
 	for {
 		issuesSearchResult, resp, err := search.Issues(ctx, opts.SearchQualifiers.String(), &opts.SearchOptions)
 		if err != nil {
@@ -72,7 +64,7 @@ func MapSearchIssues(ctx context.Context, search issueSearcher, opts *MapSearchI
 	return nil
 }
 
-func SearchOneIssue(ctx context.Context, search issueSearcher, searchQualifiers SearchQualifiers) (*github.Issue, error) {
+func SearchOneIssue(ctx context.Context, search IssueSearcher, searchQualifiers SearchQualifiers) (*github.Issue, error) {
 	issuesSearchResult, _, err := search.Issues(ctx, searchQualifiers.String(), &github.SearchOptions{ListOptions: github.ListOptions{PerPage: 1}})
 	if err != nil || len(issuesSearchResult.Issues) < 1 {
 		return nil, err

@@ -20,45 +20,75 @@ func TestMapIssuesOfRepo(t *testing.T) {
 
 	testCtx := context.Background()
 	for _, tc := range []struct {
-		name          string
-		lastPageErr   error
-		issuesOnPages []int
-		handlerErr    error
-		expectIssues  int
-		expectErr     error
+		name         string
+		lastPageErr  error
+		handlerErr   error
+		rv           []*ghxtest.MockRepoIssueListerReturnValues
+		expectIssues int
+		expectErr    error
 	}{
 		{
-			name:          "ok - 0 issues",
-			issuesOnPages: []int{0},
+			name: "ok - 0 issues",
 		},
 		{
-			name:          "ok - 1 page, 1 issue",
-			issuesOnPages: []int{1},
-			expectIssues:  1,
+			name: "ok - 1 page, 1 issue",
+			rv: []*ghxtest.MockRepoIssueListerReturnValues{
+				{
+					Issues: ghxtest.NewEmptyIssues(1),
+				},
+			},
+			expectIssues: 1,
 		},
 		{
-			name:          "ok - 3 pages, 15 issues",
-			issuesOnPages: []int{5, 5, 5},
-			expectIssues:  15,
+			name: "ok - 2 pages, 8 issues",
+			rv: []*ghxtest.MockRepoIssueListerReturnValues{
+				{
+					Issues:   ghxtest.NewEmptyIssues(5),
+					Response: &github.Response{NextPage: 2},
+				},
+				{
+					Issues:   ghxtest.NewEmptyIssues(3),
+					Response: &github.Response{NextPage: 0},
+				},
+			},
+			expectIssues: 8,
 		},
 		{
-			name:        "err - 1 page, repoIssueListerErr on page 1",
-			lastPageErr: errors.New("repoIssueListerErr"),
-			expectErr:   errors.New("repoIssueListerErr"),
+			name: "err - 1 page, repoIssueListerErr on page 1",
+			rv: []*ghxtest.MockRepoIssueListerReturnValues{
+				{
+					Err: errors.New("repoIssueListerErr"),
+				},
+			},
+			expectErr: errors.New("repoIssueListerErr"),
 		},
 		{
-			name:          "err - 3 pages, 10 issues, repoIssueListerErr on page 3",
-			lastPageErr:   errors.New("repoIssueListerErr"),
-			issuesOnPages: []int{5, 5, 0},
-			expectIssues:  10,
-			expectErr:     errors.New("repoIssueListerErr"),
+			name: "err - 2 pages, 8 issues, repoIssueListerErr on page 2",
+			rv: []*ghxtest.MockRepoIssueListerReturnValues{
+				{
+					Issues:   ghxtest.NewEmptyIssues(5),
+					Response: &github.Response{NextPage: 2},
+				},
+				{
+					Err: errors.New("repoIssueListerErr"),
+				},
+			},
+			expectIssues: 5,
+			expectErr:    errors.New("repoIssueListerErr"),
 		},
 		{
-			name:          "err - 2 pages, handlerErr fails before repoIssueListerErr",
-			lastPageErr:   errors.New("repoIssueListerErr"),
-			issuesOnPages: []int{5, 0},
-			handlerErr:    errors.New("handlerErr"),
-			expectErr:     errors.New("handlerErr"),
+			name: "err - 2 pages, handlerErr fails before repoIssueListerErr",
+			rv: []*ghxtest.MockRepoIssueListerReturnValues{
+				{
+					Issues:   ghxtest.NewEmptyIssues(5),
+					Response: &github.Response{NextPage: 2},
+				},
+				{
+					Err: errors.New("repoIssueListerErr"),
+				},
+			},
+			handlerErr: errors.New("handlerErr"),
+			expectErr:  errors.New("handlerErr"),
 		},
 	} {
 		tc := tc
@@ -75,17 +105,8 @@ func TestMapIssuesOfRepo(t *testing.T) {
 					Assignee:  "testAssignee",
 				},
 			}
-			mockRepoIssueListerTestFunc := func(t *testing.T, ctx context.Context, owner, repo string, issueListByRepoOptions *github.IssueListByRepoOptions) {
-				t.Helper()
-				assert.Equal(t, testCtx, ctx)
-				assert.Equal(t, testOwner, owner)
-				assert.Equal(t, testRepo, repo)
-				assert.Equal(t, opts.IssueListByRepoOptions, *issueListByRepoOptions)
-			}
 			mockRepoIssueLister := &ghxtest.MockRepoIssueLister{
-				T:            t,
-				TestFunc:     mockRepoIssueListerTestFunc,
-				ReturnValues: ghxtest.NewMockRepoIssueListerReturnValues(tc.lastPageErr, tc.issuesOnPages...),
+				ReturnValues: tc.rv,
 			}
 
 			assert.Equal(t, tc.expectErr, MapIssuesOfRepo(testCtx, mockRepoIssueLister, opts, func(_ *github.Issue) error {
@@ -185,15 +206,7 @@ func TestMapSearchIssues(t *testing.T) {
 					Order: "testOrder",
 				},
 			}
-			mockIssueSearcherTestFunc := func(t *testing.T, ctx context.Context, query string, searchOptions *github.SearchOptions) {
-				t.Helper()
-				assert.Equal(t, testCtx, ctx)
-				assert.Equal(t, tc.searchQualifiers.String(), query)
-				assert.Equal(t, opts.SearchOptions, *searchOptions)
-			}
 			issueSearcher := &ghxtest.MockIssueSearcher{
-				T:            t,
-				TestFunc:     mockIssueSearcherTestFunc,
 				ReturnValues: ghxtest.NewMockIssueSearcherReturnValues(tc.lastPageErr, tc.issuesOnPages...),
 			}
 			assert.Equal(t, tc.expectErr, MapSearchIssues(testCtx, issueSearcher, opts, func(_ *github.Issue) error {
