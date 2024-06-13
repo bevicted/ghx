@@ -111,7 +111,7 @@ func TestMapSearchIssues(t *testing.T) {
 			}
 			var searchIssuesCallCount int
 			mapIssues := newMapIssuesF(&SearchService{
-				Issues: func(actualCtx context.Context, actualQuery string, actualOpts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
+				issuesF: func(actualCtx context.Context, actualQuery string, actualOpts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
 					assert.Equal(t, testCtx, actualCtx)
 					assert.Equal(t, testQuery, actualQuery)
 					assert.Same(t, opts, actualOpts)
@@ -179,7 +179,7 @@ func TestSearchOneIssue(t *testing.T) {
 
 			var searchIssuesCallCount int
 			issueF := newIssueF(&SearchService{
-				Issues: func(actualCtx context.Context, actualQuery string, actualOpts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
+				issuesF: func(actualCtx context.Context, actualQuery string, actualOpts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
 					assert.Equal(t, testCtx, actualCtx)
 					assert.Equal(t, testQuery, actualQuery)
 					assert.Equal(t, &github.SearchOptions{ListOptions: github.ListOptions{PerPage: 1}}, actualOpts)
