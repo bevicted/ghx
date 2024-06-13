@@ -7,16 +7,16 @@ import (
 )
 
 type SearchServiceF struct {
-	CodeF         func(ctx context.Context, query string, opts *github.SearchOptions) (*github.CodeSearchResult, *github.Response, error)
-	CommitsF      func(ctx context.Context, query string, opts *github.SearchOptions) (*github.CommitsSearchResult, *github.Response, error)
-	IssuesF       func(ctx context.Context, query string, opts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error)
-	LabelsF       func(ctx context.Context, repoID int64, query string, opts *github.SearchOptions) (*github.LabelsSearchResult, *github.Response, error)
-	RepositoriesF func(ctx context.Context, query string, opts *github.SearchOptions) (*github.RepositoriesSearchResult, *github.Response, error)
-	TopicsF       func(ctx context.Context, query string, opts *github.SearchOptions) (*github.TopicsSearchResult, *github.Response, error)
-	UsersF        func(ctx context.Context, query string, opts *github.SearchOptions) (*github.UsersSearchResult, *github.Response, error)
+	Code         func(ctx context.Context, query string, opts *github.SearchOptions) (*github.CodeSearchResult, *github.Response, error)
+	Commits      func(ctx context.Context, query string, opts *github.SearchOptions) (*github.CommitsSearchResult, *github.Response, error)
+	Issues       func(ctx context.Context, query string, opts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error)
+	Labels       func(ctx context.Context, repoID int64, query string, opts *github.SearchOptions) (*github.LabelsSearchResult, *github.Response, error)
+	Repositories func(ctx context.Context, query string, opts *github.SearchOptions) (*github.RepositoriesSearchResult, *github.Response, error)
+	Topics       func(ctx context.Context, query string, opts *github.SearchOptions) (*github.TopicsSearchResult, *github.Response, error)
+	Users        func(ctx context.Context, query string, opts *github.SearchOptions) (*github.UsersSearchResult, *github.Response, error)
 
-	IssueF     func(ctx context.Context, query string) (*github.Issue, error)
-	MapIssuesF func(ctx context.Context, query string, opts *github.SearchOptions, handle IssueHandler) error
+	Issue     func(ctx context.Context, query string) (*github.Issue, error)
+	MapIssues func(ctx context.Context, query string, opts *github.SearchOptions, handle IssueHandler) error
 }
 
 type SearchService struct {
@@ -24,32 +24,32 @@ type SearchService struct {
 }
 
 func (s *SearchService) Code(ctx context.Context, query string, opts *github.SearchOptions) (*github.CodeSearchResult, *github.Response, error) {
-	return s.f.CodeF(ctx, query, opts)
+	return s.f.Code(ctx, query, opts)
 }
 func (s *SearchService) Commits(ctx context.Context, query string, opts *github.SearchOptions) (*github.CommitsSearchResult, *github.Response, error) {
-	return s.f.CommitsF(ctx, query, opts)
+	return s.f.Commits(ctx, query, opts)
 }
 func (s *SearchService) Issues(ctx context.Context, query string, opts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
-	return s.f.IssuesF(ctx, query, opts)
+	return s.f.Issues(ctx, query, opts)
 }
 func (s *SearchService) Labels(ctx context.Context, repoID int64, query string, opts *github.SearchOptions) (*github.LabelsSearchResult, *github.Response, error) {
-	return s.f.LabelsF(ctx, repoID, query, opts)
+	return s.f.Labels(ctx, repoID, query, opts)
 }
 func (s *SearchService) Repositories(ctx context.Context, query string, opts *github.SearchOptions) (*github.RepositoriesSearchResult, *github.Response, error) {
-	return s.f.RepositoriesF(ctx, query, opts)
+	return s.f.Repositories(ctx, query, opts)
 }
 func (s *SearchService) Topics(ctx context.Context, query string, opts *github.SearchOptions) (*github.TopicsSearchResult, *github.Response, error) {
-	return s.f.TopicsF(ctx, query, opts)
+	return s.f.Topics(ctx, query, opts)
 }
 func (s *SearchService) Users(ctx context.Context, query string, opts *github.SearchOptions) (*github.UsersSearchResult, *github.Response, error) {
-	return s.f.UsersF(ctx, query, opts)
+	return s.f.Users(ctx, query, opts)
 }
 
 func (s *SearchService) Issue(ctx context.Context, query string) (*github.Issue, error) {
-	return s.f.IssueF(ctx, query)
+	return s.f.Issue(ctx, query)
 }
 func (s *SearchService) MapIssues(ctx context.Context, query string, opts *github.SearchOptions, handle IssueHandler) error {
-	return s.f.MapIssuesF(ctx, query, opts, handle)
+	return s.f.MapIssues(ctx, query, opts, handle)
 }
 
 func NewSearchService(f *SearchServiceF) *SearchService {
@@ -57,19 +57,17 @@ func NewSearchService(f *SearchServiceF) *SearchService {
 }
 
 func newSearchServicePassthrough(client *github.Client) *SearchService {
-	s := &SearchService{
-		f: &SearchServiceF{
-			CodeF:         client.Search.Code,
-			CommitsF:      client.Search.Commits,
-			IssuesF:       client.Search.Issues,
-			LabelsF:       client.Search.Labels,
-			RepositoriesF: client.Search.Repositories,
-			TopicsF:       client.Search.Topics,
-			UsersF:        client.Search.Users,
-		},
-	}
-	s.f.IssueF = newIssueF(s)
-	s.f.MapIssuesF = newMapIssuesF(s)
+	s := &SearchService{f: &SearchServiceF{
+		Code:         client.Search.Code,
+		Commits:      client.Search.Commits,
+		Issues:       client.Search.Issues,
+		Labels:       client.Search.Labels,
+		Repositories: client.Search.Repositories,
+		Topics:       client.Search.Topics,
+		Users:        client.Search.Users,
+	}}
+	s.f.Issue = newIssueF(s)
+	s.f.MapIssues = newMapIssuesF(s)
 	return s
 }
 

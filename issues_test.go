@@ -113,7 +113,7 @@ func TestMapIssuesOfRepo(t *testing.T) {
 				Assignee:  "testAssignee",
 			}
 			var listByRepoCallCount int
-			mapByRepo := newMapByRepoF(&IssuesService{
+			mapByRepo := newMapByRepoF(NewIssuesService(&IssuesServiceF{
 				ListByRepo: func(actualCtx context.Context, actualOwner, actualRepo string, actualOpts *github.IssueListByRepoOptions) ([]*github.Issue, *github.Response, error) {
 					assert.Equal(t, testCtx, actualCtx)
 					assert.Equal(t, testOwner, actualOwner)
@@ -124,7 +124,7 @@ func TestMapIssuesOfRepo(t *testing.T) {
 					listByRepoCallCount++
 					return rv.Issues, rv.Res, rv.Err
 				},
-			})
+			}))
 
 			var issueCount int
 			assert.Equal(t, tc.expectErr, mapByRepo(testCtx, testOwner, testRepo, opts, func(_ *github.Issue) error {

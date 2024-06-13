@@ -1046,7 +1046,7 @@ type UsersService struct {
 func NewClient(client *github.Client) *Client {
 	return &Client{
 		Client: client,
-		Issues: newIssuesService(client),
+		Issues: newIssuesServicePassthrough(client),
 		Licenses: &LicensesService{
 			Get:  client.Licenses.Get,
 			List: client.Licenses.List,
