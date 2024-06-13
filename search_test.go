@@ -110,8 +110,8 @@ func TestMapSearchIssues(t *testing.T) {
 				Order: "testOrder",
 			}
 			var searchIssuesCallCount int
-			mapIssues := newMapIssuesF(&SearchService{
-				issuesF: func(actualCtx context.Context, actualQuery string, actualOpts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
+			mapIssues := newMapIssuesF(NewSearchService(&SearchServiceF{
+				IssuesF: func(actualCtx context.Context, actualQuery string, actualOpts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
 					assert.Equal(t, testCtx, actualCtx)
 					assert.Equal(t, testQuery, actualQuery)
 					assert.Same(t, opts, actualOpts)
@@ -120,7 +120,7 @@ func TestMapSearchIssues(t *testing.T) {
 					searchIssuesCallCount++
 					return rv.Result, rv.Res, rv.Err
 				},
-			})
+			}))
 			var issueCount int
 			assert.Equal(t, tc.expectErr, mapIssues(testCtx, testQuery, opts, func(_ *github.Issue) error {
 				if tc.handlerErr == nil {
@@ -178,8 +178,8 @@ func TestSearchOneIssue(t *testing.T) {
 			t.Parallel()
 
 			var searchIssuesCallCount int
-			issueF := newIssueF(&SearchService{
-				issuesF: func(actualCtx context.Context, actualQuery string, actualOpts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
+			issueF := newIssueF(NewSearchService(&SearchServiceF{
+				IssuesF: func(actualCtx context.Context, actualQuery string, actualOpts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
 					assert.Equal(t, testCtx, actualCtx)
 					assert.Equal(t, testQuery, actualQuery)
 					assert.Equal(t, &github.SearchOptions{ListOptions: github.ListOptions{PerPage: 1}}, actualOpts)
@@ -188,7 +188,7 @@ func TestSearchOneIssue(t *testing.T) {
 					searchIssuesCallCount++
 					return rv.Result, rv.Res, rv.Err
 				},
-			})
+			}))
 
 			actualIssue, err := issueF(testCtx, testQuery)
 			var expectIssue *github.Issue

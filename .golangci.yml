@@ -57,6 +57,8 @@ linters-settings:
         disabled: true
       - name: line-length-limit
         disabled: true
+      - name: max-public-structs
+        disabled: true
 run:
   timeout: 3m
   tests: true

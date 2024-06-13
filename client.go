@@ -1455,7 +1455,7 @@ func NewClient(client *github.Client) *Client {
 			UpdateAttributeForSCIMUser:     client.SCIM.UpdateAttributeForSCIMUser,
 			UpdateProvisionedOrgMembership: client.SCIM.UpdateProvisionedOrgMembership,
 		},
-		Search: newSearchService(client),
+		Search: newSearchServicePassthrough(client),
 		SecretScanning: &SecretScanningService{
 			GetAlert:                client.SecretScanning.GetAlert,
 			ListAlertsForEnterprise: client.SecretScanning.ListAlertsForEnterprise,
