@@ -32,12 +32,19 @@ func TestMapSearchIssues(t *testing.T) {
 	}{
 		{
 			name: "ok - 0 issues",
+			searchIssuesReturnValues: []searchIssuesReturnValue{
+				{
+					Result: &github.IssuesSearchResult{},
+					Res:    &github.Response{},
+				},
+			},
 		},
 		{
 			name: "ok - 1 page, 1 issue",
 			searchIssuesReturnValues: []searchIssuesReturnValue{
 				{
 					Result: &github.IssuesSearchResult{Issues: ghxtest.NewEmptyIssues(t, 1)},
+					Res:    &github.Response{},
 				},
 			},
 			expectIssues: 1,
@@ -48,9 +55,11 @@ func TestMapSearchIssues(t *testing.T) {
 			searchIssuesReturnValues: []searchIssuesReturnValue{
 				{
 					Result: &github.IssuesSearchResult{Issues: ghxtest.NewEmptyIssues(t, 5)},
+					Res:    &github.Response{NextPage: 2},
 				},
 				{
 					Result: &github.IssuesSearchResult{Issues: ghxtest.NewEmptyIssues(t, 3)},
+					Res:    &github.Response{},
 				},
 			},
 		},
@@ -68,6 +77,7 @@ func TestMapSearchIssues(t *testing.T) {
 			searchIssuesReturnValues: []searchIssuesReturnValue{
 				{
 					Result: &github.IssuesSearchResult{Issues: ghxtest.NewEmptyIssues(t, 5)},
+					Res:    &github.Response{NextPage: 2},
 				},
 				{
 					Err: errors.New("searchIssueErr"),
@@ -81,6 +91,7 @@ func TestMapSearchIssues(t *testing.T) {
 			searchIssuesReturnValues: []searchIssuesReturnValue{
 				{
 					Result: &github.IssuesSearchResult{Issues: ghxtest.NewEmptyIssues(t, 5)},
+					Res:    &github.Response{NextPage: 2},
 				},
 				{
 					Err: errors.New("searchIssueErr"),
@@ -125,72 +136,53 @@ func TestMapSearchIssues(t *testing.T) {
 func TestSearchOneIssue(t *testing.T) {
 	t.Parallel()
 
+	const testQuery = "testQuery"
 	testCtx := context.Background()
 
 	for _, tc := range []struct {
-		name           string
-		query          string
-		searchIssueErr error
-		expectErr      error
+		name                     string
+		searchIssueErr           error
+		expectErr                error
+		searchIssuesReturnValues []searchIssuesReturnValue
 	}{
 		{
 			name: "ok - no query",
+			searchIssuesReturnValues: []searchIssuesReturnValue{
+				{
+					Result: &github.IssuesSearchResult{},
+					Res:    &github.Response{},
+				},
+			},
 		},
 		{
 			name: "ok - got issue",
-			query: SearchQualifiers{
-				IsIssue,
-				IsOpen,
-				RestrictTextSearchToBody,
-				HasText("some very specific text"),
+			searchIssuesReturnValues: []searchIssuesReturnValue{
+				{
+					Result: &github.IssuesSearchResult{Issues: ghxtest.NewEmptyIssues(t, 1)},
+					Res:    &github.Response{},
+				},
 			},
 		},
 		{
-			name: "err - searchIssueErr",
-			query: SearchQualifiers{
-				IsIssue,
-				IsOpen,
+			name:      "err - searchIssueErr",
+			expectErr: errors.New("searchIssueErr"),
+			searchIssuesReturnValues: []searchIssuesReturnValue{
+				{
+					Err: errors.New("searchIssueErr"),
+				},
 			},
-			searchIssueErr: errors.New("searchIssueErr"),
-			expectErr:      errors.New("searchIssueErr"),
 		},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockIssueSearcherTestFunc := func(t *testing.T, ctx context.Context, query string, searchOptions *github.SearchOptions) {
-				t.Helper()
-				assert.Equal(t, testCtx, ctx)
-				assert.Equal(t, tc.query.String(), query)
-				assert.Equal(t, github.SearchOptions{ListOptions: github.ListOptions{PerPage: 1}}, *searchOptions)
-			}
-			issueSearcher := &ghxtest.MockIssueSearcher{
-				T:        t,
-				TestFunc: mockIssueSearcherTestFunc,
-				ReturnValues: []*ghxtest.MockIssueSearcherReturnValues{
-					{
-						Err: tc.searchIssueErr,
-					},
-				},
-			}
-			var mockIssue *github.Issue
-			if tc.searchIssueErr == nil {
-				mockIssue = &github.Issue{}
-				issueSearcher.ReturnValues[0].IssueSearchResult = &github.IssuesSearchResult{
-					Issues: []*github.Issue{mockIssue},
-				}
-			}
-			opts := &github.SearchOptions{
-				Sort:  "testSort",
-				Order: "testOrder",
-			}
 			var searchIssuesCallCount int
 			issueF := newIssueF(&SearchService{
 				Issues: func(actualCtx context.Context, actualQuery string, actualOpts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
 					assert.Equal(t, testCtx, actualCtx)
 					assert.Equal(t, testQuery, actualQuery)
-					assert.Same(t, opts, actualOpts)
+					assert.Equal(t, &github.SearchOptions{ListOptions: github.ListOptions{PerPage: 1}}, actualOpts)
 					require.Less(t, searchIssuesCallCount, len(tc.searchIssuesReturnValues), "Issues called more times than it has return values mocked")
 					rv := tc.searchIssuesReturnValues[searchIssuesCallCount]
 					searchIssuesCallCount++
@@ -198,8 +190,13 @@ func TestSearchOneIssue(t *testing.T) {
 				},
 			})
 
-			issue, err := SearchOneIssue(testCtx, issueSearcher, tc.query)
-			assert.Equal(t, mockIssue, issue)
+			actualIssue, err := issueF(testCtx, testQuery)
+			var expectIssue *github.Issue
+			r := tc.searchIssuesReturnValues[0].Result
+			if r != nil && len(r.Issues) > 0 {
+				expectIssue = r.Issues[0]
+			}
+			assert.Equal(t, expectIssue, actualIssue)
 			assert.Equal(t, tc.expectErr, err)
 		})
 	}

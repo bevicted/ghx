@@ -35,12 +35,18 @@ func TestMapIssuesOfRepo(t *testing.T) {
 	}{
 		{
 			name: "ok - 0 issues",
+			listByRepoReturnValues: []listByRepoReturnValue{
+				{
+					Res: &github.Response{},
+				},
+			},
 		},
 		{
 			name: "ok - 1 page, 1 issue",
 			listByRepoReturnValues: []listByRepoReturnValue{
 				{
 					Issues: ghxtest.NewEmptyIssues(t, 1),
+					Res:    &github.Response{},
 				},
 			},
 			expectIssueCount: 1,
@@ -54,7 +60,7 @@ func TestMapIssuesOfRepo(t *testing.T) {
 				},
 				{
 					Issues: ghxtest.NewEmptyIssues(t, 3),
-					Res:    &github.Response{NextPage: 0},
+					Res:    &github.Response{},
 				},
 			},
 			expectIssueCount: 8,
