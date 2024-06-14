@@ -43,5 +43,5 @@ func TestSearchQualifiers(t *testing.T) {
 	eq(`updated:">2006-01-02"`, WasUpdated(">2006-01-02"))
 	eq(`closed:"2006-01-02..2006-02-03"`, WasClosed("2006-01-02..2006-02-03"))
 	eq(`merged:"<=2006=01-02"`, WasMerged("<=2006=01-02"))
-	eq(`"text"`, WithText("text"))
+	eq(`"text"`, HasText("text"))
 }

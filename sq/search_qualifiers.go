@@ -211,6 +211,6 @@ func WasMerged(iso8601Date string) SearchQualifier {
 	return newSearchQualifier("merged", iso8601Date)
 }
 
-func WithText(text string) SearchQualifier {
+func HasText(text string) SearchQualifier {
 	return SearchQualifier(fmt.Sprintf("%q", text))
 }
