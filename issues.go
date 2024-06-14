@@ -177,7 +177,7 @@ func NewIssuesService(f *IssuesServiceF) *IssuesService {
 }
 
 func newIssuesServicePassthrough(client *github.Client) *IssuesService {
-	i := &IssuesService{f: &IssuesServiceF{
+	i := NewIssuesService(&IssuesServiceF{
 		AddAssignees:           client.Issues.AddAssignees,
 		AddLabelsToIssue:       client.Issues.AddLabelsToIssue,
 		Create:                 client.Issues.Create,
@@ -216,7 +216,7 @@ func newIssuesServicePassthrough(client *github.Client) *IssuesService {
 		RemoveMilestone:        client.Issues.RemoveMilestone,
 		ReplaceLabelsForIssue:  client.Issues.ReplaceLabelsForIssue,
 		Unlock:                 client.Issues.Unlock,
-	}}
+	})
 	i.f.MapByRepo = newMapByRepoF(i)
 	return i
 }

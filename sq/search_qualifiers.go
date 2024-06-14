@@ -1,3 +1,5 @@
+// Based on https://docs.github.com/en/search-github/searching-on-github/searching-issues-and-pull-requests
+
 package sq
 
 import (
@@ -6,6 +8,11 @@ import (
 )
 
 type SearchQualifier string
+
+func (s SearchQualifier) String() string {
+	return string(s)
+}
+
 type SearchQualifiers []SearchQualifier
 
 func (s SearchQualifiers) String() string {
@@ -16,7 +23,7 @@ func (s SearchQualifiers) String() string {
 				panic(err)
 			}
 		}
-		if _, err := query.WriteString(string(qualifier)); err != nil {
+		if _, err := query.WriteString(qualifier.String()); err != nil {
 			panic(err)
 		}
 	}
@@ -34,8 +41,8 @@ const (
 	IsOpen   SearchQualifier = "state:open"
 	IsClosed SearchQualifier = "state:closed"
 
-	ClosedBecauseCompleted  SearchQualifier = "reason:completed"
-	ClosedBecauseNotPlanned SearchQualifier = "reason:\"not planned\""
+	IsClosedBecauseCompleted  SearchQualifier = "reason:completed"
+	IsClosedBecauseNotPlanned SearchQualifier = "reason:\"not planned\""
 
 	IsQueued   SearchQualifier = "is:queued"
 	IsPublic   SearchQualifier = "is:public"
@@ -50,14 +57,14 @@ const (
 	HasNoLinkedPR    SearchQualifier = "-linked:pr"
 	HasNoLinkedIssue SearchQualifier = "-linked:issue"
 
-	WithStatusPending SearchQualifier = "status:pending"
-	WithStatusSuccess SearchQualifier = "status:success"
-	WithStatusFailure SearchQualifier = "status:failure"
+	HasStatusPending SearchQualifier = "status:pending"
+	HasStatusSuccess SearchQualifier = "status:success"
+	HasStatusFailing SearchQualifier = "status:failure"
 
 	IsDraft    SearchQualifier = "draft:true"
 	IsNotDraft SearchQualifier = "draft:false"
 
-	HasNoReview      SearchQualifier = "review:none"
+	HasNoReviews     SearchQualifier = "review:none"
 	RequiresReview   SearchQualifier = "review:required"
 	IsApproved       SearchQualifier = "review:approved"
 	HasChangeRequest SearchQualifier = "review:changes_requested"
@@ -65,10 +72,10 @@ const (
 	IsArchived    SearchQualifier = "archived:true"
 	IsNotArchived SearchQualifier = "archived:false"
 
-	WithoutAnyLabels     SearchQualifier = "no:label"
-	WithoutAnyMilestones SearchQualifier = "no:milestone"
-	WithoutAnyAssignees  SearchQualifier = "no:assignee"
-	WithoutAnyProjects   SearchQualifier = "no:project"
+	HasNoLabels     SearchQualifier = "no:label"
+	HasNoMilestones SearchQualifier = "no:milestone"
+	HasNoAssignees  SearchQualifier = "no:assignee"
+	HasNoProjects   SearchQualifier = "no:project"
 
 	IsAuthoredBySelf SearchQualifier = "author:@me"
 )
@@ -81,15 +88,15 @@ func IsReviewedBy(user string) SearchQualifier {
 	return newSearchQualifier("reviewed-by", user)
 }
 
-func WithReviewRequestFromUser(user string) SearchQualifier {
+func HasUserReviewRequested(user string) SearchQualifier {
 	return newSearchQualifier("review-requested", user)
 }
 
-func WithReviewRequestDirectlyFromUser(user string) SearchQualifier {
+func HasUserReviewDirectlyRequested(user string) SearchQualifier {
 	return newSearchQualifier("user-review-requested", user)
 }
 
-func WithReviewRequestFromTeam(team string) SearchQualifier {
+func HasTeamReviewRequested(team string) SearchQualifier {
 	return newSearchQualifier("team-review-requested", team)
 }
 
@@ -117,11 +124,11 @@ func IsAssignedTo(assignee string) SearchQualifier {
 	return newSearchQualifier("assignee", assignee)
 }
 
-func WhereUserIsMentioned(user string) SearchQualifier {
+func HasUserMention(user string) SearchQualifier {
 	return newSearchQualifier("mentions", user)
 }
 
-func WhereTeamIsMentioned(team string) SearchQualifier {
+func HasTeamMention(team string) SearchQualifier {
 	return newSearchQualifier("team", team)
 }
 
@@ -133,46 +140,54 @@ func HasUserInvolved(user string) SearchQualifier {
 	return newSearchQualifier("involves", user)
 }
 
-func WithLabel(label string) SearchQualifier {
+func HasLabel(label string) SearchQualifier {
 	return newSearchQualifier("label", label)
 }
 
-func WithoutLabel(label string) SearchQualifier {
+func HasLabels(labels ...string) SearchQualifier {
+	return HasLabel(strings.Join(labels, ","))
+}
+
+func LacksLabel(label string) SearchQualifier {
 	return newSearchQualifier("-label", label)
 }
 
-func WithMilestone(milestone string) SearchQualifier {
+func LacksLabels(labels ...string) SearchQualifier {
+	return LacksLabel(strings.Join(labels, ","))
+}
+
+func InMilestone(milestone string) SearchQualifier {
 	return newSearchQualifier("milestone", milestone)
 }
 
-func WithProject(project string) SearchQualifier {
+func InProject(project string) SearchQualifier {
 	return newSearchQualifier("project", project)
 }
 
-func WithMergeSourceBranch(branch string) SearchQualifier {
+func HasMergeSourceBranch(branch string) SearchQualifier {
 	return newSearchQualifier("head", branch)
 }
 
-func WithMergeTargetBranch(branch string) SearchQualifier {
+func HasMergeTargetBranch(branch string) SearchQualifier {
 	return newSearchQualifier("base", branch)
 }
 
-func WrittenInLanguage(language string) SearchQualifier {
+func IsWrittenInLanguage(language string) SearchQualifier {
 	return newSearchQualifier("language", language)
 }
 
 // e.g.: 0, >100, 500..1000
-func WithNumberOfComments(quantity string) SearchQualifier {
+func HasNumberOfComments(quantity string) SearchQualifier {
 	return newSearchQualifier("comments", quantity)
 }
 
 // e.g.: 0, >100, 500..1000
-func WithNumberOfInteractions(quantity string) SearchQualifier {
+func HasNumberOfInteractions(quantity string) SearchQualifier {
 	return newSearchQualifier("interactions", quantity)
 }
 
 // e.g.: 0, >100, 500..1000
-func WithNumberOfReactions(quantity string) SearchQualifier {
+func HasNumberOfReactions(quantity string) SearchQualifier {
 	return newSearchQualifier("reactions", quantity)
 }
 
@@ -196,6 +211,6 @@ func WasMerged(iso8601Date string) SearchQualifier {
 	return newSearchQualifier("merged", iso8601Date)
 }
 
-func HasText(text string) SearchQualifier {
+func WithText(text string) SearchQualifier {
 	return SearchQualifier(fmt.Sprintf("%q", text))
 }
