@@ -16,10 +16,18 @@ type IssueFactory struct {
 // NOTE: performance heavy, only use for detailed testing
 func (f *IssueFactory) NewIssue(t *testing.T) *github.Issue {
 	t.Helper()
-	b, err := json.Marshal(f.Issue)
-	require.NoError(t, err, "error marshalling in IssueFactory.NewIssue")
 	var i github.Issue
-	require.NoError(t, json.Unmarshal(b, &i), "error unmarshalling in IssueFactory.NewIssue")
+	remarshal(t, f.Issue, &i)
+	return &i
+}
+
+func (f *IssueFactory) NewIssueWithOverwrite(t *testing.T, overwrite github.Issue) *github.Issue {
+	t.Helper()
+	var i github.Issue
+
+	remarshal(t, f.Issue, &i)
+	remarshal(t, overwrite, &i)
+
 	return &i
 }
 
@@ -51,4 +59,12 @@ func NewEmptyIssues(t *testing.T, n int) []*github.Issue {
 		issues[i] = &github.Issue{Number: &i}
 	}
 	return issues
+}
+
+func remarshal[T any](t *testing.T, marshalTarget T, unmarshalTarget *T) {
+	t.Helper()
+
+	b, err := json.Marshal(marshalTarget)
+	require.NoError(t, err, "error marshalling in remarshal")
+	require.NoError(t, json.Unmarshal(b, unmarshalTarget), "error unmarshalling in remarshal")
 }

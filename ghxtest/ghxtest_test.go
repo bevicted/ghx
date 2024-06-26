@@ -43,6 +43,19 @@ func TestIssueFactory(t *testing.T) {
 	for idx, i := range issues {
 		assert.Equal(t, *baseIssue.Number+idx, *i.Number)
 	}
+
+	overwritten := f.NewIssueWithOverwrite(t, github.Issue{Body: ghx.PTR("new body"), User: &github.User{Name: ghx.PTR("new username")}})
+	assert.Equal(t,
+		github.Issue{
+			Number: ghx.PTR(123),
+			State:  ghx.StateOpen.StringP(),
+			Body:   ghx.PTR("new body"),
+			User: &github.User{
+				Name: ghx.PTR("new username"),
+			},
+		},
+		*overwritten,
+	)
 }
 
 func TestNewEmptyIssues(t *testing.T) {
